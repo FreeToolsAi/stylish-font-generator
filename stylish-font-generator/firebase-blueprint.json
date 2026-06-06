@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores a user's layout preferences, favorites, and history.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique user authentication ID."
+        },
+        "favorites": {
+          "type": "array",
+          "description": "Array of user favorited font styles"
+        },
+        "history": {
+          "type": "array",
+          "description": "Array of recently copied styles capped at 20"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server time"
+        }
+      },
+      "required": [
+        "userId",
+        "favorites",
+        "history"
+      ]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Each user's preferences, favorited font styles, and capped copying history logs."
+    }
+  }
+}

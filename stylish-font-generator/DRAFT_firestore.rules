@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened helper primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation helper (Strict Schema)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'favorites', 'history', 'updatedAt'])
+        && data.keys().size() == 4
+        && data.userId == request.auth.uid
+        && data.favorites is list
+        && data.favorites.size() <= 100
+        && data.history is list
+        && data.history.size() <= 20
+        && data.updatedAt == request.time;
+    }
+
+    // Match statement for Users profile
+    match /users/{userId} {
+      // Protect document ID against poisoning attempts
+      allow get: if isVerified() && isValidId(userId) && userId == request.auth.uid;
+      
+      allow create: if isVerified() 
+        && isValidId(userId) 
+        && userId == request.auth.uid 
+        && isValidUserProfile(incoming());
+
+      // Named Update Actions using the "Action-Based" Update Pattern
+      allow update: if isVerified()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && (
+          // Ensure immutable fields like userId remain unchanged
+          (incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['favorites', 'updatedAt'])) ||
+          (incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['history', 'updatedAt'])) ||
+          (incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['favorites', 'history', 'updatedAt']))
+        );
+
+      allow delete: if isVerified() && isValidId(userId) && userId == request.auth.uid;
+    }
+  }
+}

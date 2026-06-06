@@ -1,0 +1,6 @@
+{
+  "name": "Fancy Text & Name Style Generator for FREE",
+  "description": "Convert standard text into beautiful Jameel Noori Nastaliq, stylish cursive, mathematical bold, gothic blackletter, and custom game symbols for PUBG/Free Fire handles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
